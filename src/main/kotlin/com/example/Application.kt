@@ -30,7 +30,7 @@ class HelloController {
 @Filter("/**")
 @Introspected
 class TraceIdFilter : HttpServerFilter {
-	@Value("\${otel.custom.trace-header-name:x-ms-traceid}")
+	@Value("\${otel.custom.trace-header-name:x-traceid}")
 	var traceIdHeaderName: String? = null
 	override fun doFilter(
 		request: HttpRequest<*>?, chain: ServerFilterChain

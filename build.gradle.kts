@@ -26,6 +26,9 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}")
     runtimeOnly("ch.qos.logback:logback-classic")
     runtimeOnly("com.fasterxml.jackson.module:jackson-module-kotlin")
+
+    implementation(platform("io.opentelemetry:opentelemetry-bom:1.30.1"))
+    implementation("io.opentelemetry:opentelemetry-api")
 }
 
 

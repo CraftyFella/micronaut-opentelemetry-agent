@@ -29,6 +29,7 @@ dependencies {
 
     implementation(platform("io.opentelemetry:opentelemetry-bom:1.30.1"))
     implementation("io.opentelemetry:opentelemetry-api")
+    implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:1.30.0")
 }
 
 

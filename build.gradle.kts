@@ -30,6 +30,10 @@ dependencies {
     implementation(platform("io.opentelemetry:opentelemetry-bom:1.30.1"))
     implementation("io.opentelemetry:opentelemetry-api")
     implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:1.30.0")
+
+    implementation("io.micronaut.mongodb:micronaut-mongo-reactive")
+    implementation( group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core" )
+    implementation( group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-reactor" )
 }
 
 
@@ -71,4 +75,53 @@ val downloadOpenTelemetryAgent by tasks.register<Download>("downloadOpenTelemetr
     onlyIfNewer(true)
 }
 
+val otelEndpoint = System.getenv("OTEL_ENDPOINT") ?: "http://localhost:4317"
+val otelKey = System.getenv("OTEL_KEY") ?: "doesn't matter for local host"
+val debug = System.getenv("OTEL_DEBUG") ?: "true"
 
+val run by tasks.getting(JavaExec::class) {
+    dependsOn(downloadOpenTelemetryAgent)
+    jvmArgs = listOf(
+        "-javaagent:$javaAgentJar",
+        "-Dotel.service.name=dave",
+        "-Dotel.traces.exporter=otlp",
+        "-Dotel.metrics.exporter=otlp",
+        "-Dotel.logs.exporter=otlp",
+        "-Dotel.traces.sampler=always_on",
+        "-Dotel.attribute.value.length.limit=4095",
+        "-Dotel.exporter.otlp.compression=gzip",
+        "-Dotel.exporter.otlp.headers=api-key=$otelKey",
+        "-Dotel.exporter.otlp.endpoint=$otelEndpoint",
+        "-Dotel.exporter.otlp.protocol=grpc",
+        "-Dotel.exporter.otlp.timeout=30000",
+        "-Dotel.javaagent.debug=$debug"
+    )
+}
+//
+//// Task to run Java with the specified commands
+//val shadowRun by tasks.register<JavaExec>("shadowRun") {
+//    dependsOn(task(":shadowJar"))
+//    args("-javaagent:$javaAgentJar", "-jar", "${project.buildDir}/libs/${project.name}-${project.version}-all.jar")
+//}
+//
+////val shadowRun2 by tasks.getting(JavaExec::class) {
+////    dependsOn(downloadOpenTelemetryAgent)
+////    dependsOn(task(":shadowJar"))
+////    jvmArgs = listOf(
+////        "-javaagent:$javaAgentJar=agent-arguments",
+////        "-jar ${project.buildDir}/libs/${project.name}-${project.version}-all.jar",
+////        "-Dotel.service.name=dave",
+////        "-Dotel.traces.exporter=otlp",
+////        "-Dotel.metrics.exporter=otlp",
+////        "-Dotel.logs.exporter=otlp",
+////        "-Dotel.traces.sampler=always_on",
+////        "-Dotel.attribute.value.length.limit=4095",
+////        "-Dotel.exporter.otlp.compression=gzip",
+////        "-Dotel.exporter.otlp.headers=api-key=$otelKey",
+////        "-Dotel.exporter.otlp.endpoint=$otelEndpoint",
+////        "-Dotel.exporter.otlp.protocol=grpc",
+////        "-Dotel.exporter.otlp.timeout=30000",
+////        "-Dotel.javaagent.debug=$debug"
+////    )
+////}
+//

@@ -1,5 +1,9 @@
 package com.example
 
+import com.mongodb.reactivestreams.client.MongoClient
+import com.mongodb.reactivestreams.client.MongoClients
+import com.mongodb.reactivestreams.client.MongoCollection
+import com.mongodb.reactivestreams.client.MongoDatabase
 import io.micronaut.context.annotation.Bean
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Value
@@ -19,22 +23,26 @@ import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.instrumentation.annotations.WithSpan
 import jakarta.inject.Singleton
+import org.bson.Document
 import org.reactivestreams.Publisher
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.reactive.asFlow
 
 fun main(args: Array<String>) {
 	run(*args)
 }
 
 @Controller("/hello")
-class HelloController(private val annotatedThing: AnnotatedThing, private val manuallyWiredUpThing: ManuallyWiredUpThing) {
+class HelloController(private val annotatedThing: AnnotatedThing, private val manuallyWiredUpThing: ManuallyWiredUpThing, private val mongoDbThing: MonoDbThing) {
 
 	@Get("/")
-	fun index(): String {
+	suspend fun index(): String {
 		annotatedThing.invoke()
 		manuallyWiredUpThing.invoke()
-		return "Hello World"
+		val count = mongoDbThing.invoke().count()
+		return "Hello World $count"
 	}
 }
 
@@ -47,6 +55,17 @@ class AnnotatedThing {
 	fun invoke() {
 		Span.current().setAttribute("testing", true)
 		log.info("Doing a thing")
+	}
+}
+
+@Singleton
+class MonoDbThing(private val mongoCollection: MongoCollection<Document>) {
+
+	private val log: Logger = LoggerFactory.getLogger(MonoDbThing::class.java)
+
+	@WithSpan
+	suspend fun invoke(): List<Document> {
+		return mongoCollection.find().asFlow().toList()
 	}
 }
 
@@ -94,4 +113,18 @@ class TracerFactory {
 		return GlobalOpenTelemetry.get()
 	}
 
+}
+
+@Factory
+class MongoFactory {
+	@Bean
+	fun mongoClient(): MongoClient = MongoClients.create("mongodb://localhost:27017")
+
+	@Bean
+	fun mongoDatabase(mongoClient: MongoClient): MongoDatabase =
+		mongoClient.getDatabase("test")
+
+	@Bean
+	fun mongoCollection(mongoDatabase: com.mongodb.reactivestreams.client.MongoDatabase): MongoCollection<Document> =
+		mongoDatabase.getCollection("test")
 }
